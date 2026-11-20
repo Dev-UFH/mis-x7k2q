@@ -548,13 +548,16 @@ function drawMom(){
 }
 
 /* ================= 3. PRODUCT TRACKER ================= */
-const trkF={node:'',store:'',style:'',color:'',view:'m'};
+const AW26_TEES=new Set(['Dual Snakes Bamboo Tee Brown','Dual Snakes Bamboo Tee Black','Red Flag Bamboo Tee White','Red Flag Bamboo Tee Wine','Red Flag Bamboo Tee Orange Pink','Goth Bamboo Tee Burnt Orange','Goth Bamboo Tee Brown','Cherry Bomb Tee Red','Cherry Bomb Tee Yellow','Bloom & Bite Tee Green','Bloom & Bite Tee Aqua','Weekend Mansion Tee Black','Weekend Mansion Tee Green','Pick Me Never Tee Aqua','Pick Me Never Tee Black','Rolling Worldwide Tee Pink','Rolling Worldwide Tee Patriot Blue']);
+const dropOk=(d,st)=>!d||(d==='aw26'?AW26_TEES.has(st):!AW26_TEES.has(st));
+const trkF={node:'',store:'',style:'',color:'',drop:'',view:'m'};
 function rTrk(){
   const el=document.getElementById('sec-trk');
   el.innerHTML=`
   <h2>Product-wise Sales Tracker · Category / Node</h2>
   <div class="sub">Every style, month by month (units) with color, net value, ASP and discount — plus size & color impact on total sales. Filters apply to everything below.</div>
   <div class="fstrip">
+    <label>Drop</label><select id="trkDrop"><option value="">All drops</option><option value="aw26">AW-26 new tees (17 styles)</option><option value="old">Earlier styles (excl. AW-26 tees)</option></select>
     <label>Node</label><select id="trkNode"><option value="">All nodes</option>${NODES.map(n=>`<option>${n}</option>`).join('')}</select>
     <label>Style</label><select id="trkStyle" style="min-width:210px;max-width:300px"><option value="">All styles</option></select>
     <label>Color</label><select id="trkColor"><option value="">All colors</option></select>
@@ -572,25 +575,26 @@ function rTrk(){
   <div class="card" style="margin-top:14px"><h2 style="font-size:18px">Style tracker</h2><div class="twrap" id="trkTbl" style="max-height:640px"></div></div>`;
   /* style and color lists follow the node/store chosen */
   const fillTrkOpts=()=>{
-    const base=DATA.filter(r=>(!trkF.node||r.n===trkF.node)&&(!trkF.store||r.s===trkF.store));
+    const base=DATA.filter(r=>(!trkF.node||r.n===trkF.node)&&(!trkF.store||r.s===trkF.store)&&dropOk(trkF.drop,r.st));
     const sty=[...new Set(base.filter(r=>!trkF.color||r.c===trkF.color).map(r=>r.st))].sort(),col=[...new Set(base.filter(r=>!trkF.style||r.st===trkF.style).map(r=>r.c))].sort();
     const ss=document.getElementById('trkStyle');ss.innerHTML='<option value="">All styles ('+sty.length+')</option>'+sty.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
     if(trkF.style&&!sty.includes(trkF.style))trkF.style='';ss.value=trkF.style;
     const cs=document.getElementById('trkColor');cs.innerHTML='<option value="">All colors</option>'+col.map(c=>`<option>${esc(c)}</option>`).join('');
     if(trkF.color&&!col.includes(trkF.color))trkF.color='';cs.value=trkF.color;
   };
+  document.getElementById('trkDrop').onchange=e=>{trkF.drop=e.target.value;fillTrkOpts();drawTrk();};
   document.getElementById('trkNode').onchange=e=>{trkF.node=e.target.value;fillTrkOpts();drawTrk();};
   document.getElementById('trkStore').onchange=e=>{trkF.store=e.target.value;fillTrkOpts();drawTrk();};
   document.getElementById('trkStyle').onchange=e=>{trkF.style=e.target.value;fillTrkOpts();drawTrk();};
   document.getElementById('trkColor').onchange=e=>{trkF.color=e.target.value;fillTrkOpts();drawTrk();};
-  document.getElementById('trkClear').onclick=()=>{Object.assign(trkF,{node:'',store:'',style:'',color:''});document.getElementById('trkNode').value='';document.getElementById('trkStore').value='';fillTrkOpts();drawTrk();};
-  document.getElementById('trkNode').value=trkF.node;document.getElementById('trkStore').value=trkF.store;fillTrkOpts();
+  document.getElementById('trkClear').onclick=()=>{Object.assign(trkF,{node:'',store:'',style:'',color:'',drop:''});document.getElementById('trkDrop').value='';document.getElementById('trkNode').value='';document.getElementById('trkStore').value='';fillTrkOpts();drawTrk();};
+  document.getElementById('trkDrop').value=trkF.drop;document.getElementById('trkNode').value=trkF.node;document.getElementById('trkStore').value=trkF.store;fillTrkOpts();
   document.querySelectorAll('#trkView button').forEach(b=>b.onclick=()=>{trkF.view=b.dataset.v;document.querySelectorAll('#trkView button').forEach(x=>x.classList.toggle('on',x===b));drawTrk();});
   drawTrk();
 }
 const SZORD=['XS','S','M','L','XL','XXL','Onesize'];
 function drawTrk(){
-    const rows=DATA.filter(r=>(!trkF.node||r.n===trkF.node)&&(!trkF.store||r.s===trkF.store)&&(!trkF.color||r.c===trkF.color)&&(!trkF.style||r.st===trkF.style));
+    const rows=DATA.filter(r=>(!trkF.node||r.n===trkF.node)&&(!trkF.store||r.s===trkF.store)&&(!trkF.color||r.c===trkF.color)&&(!trkF.style||r.st===trkF.style)&&dropOk(trkF.drop,r.st));
   const TN=sum(rows,r=>r.net)||1;
   /* ---- size impact ---- */
   const sz={};rows.forEach(r=>{(sz[r.sz]=sz[r.sz]||{q:0,net:0}).q+=r.q;sz[r.sz].net+=r.net;});
